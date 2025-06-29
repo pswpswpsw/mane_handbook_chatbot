@@ -11,8 +11,8 @@ load_dotenv()
 
 # --- Configuration ---
 DB_PATH = "chroma_db"
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL",'all-MiniLM-L6-v2')
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL",'llama3-chatqa')
 
 class Chatbot:
     def __init__(self):
