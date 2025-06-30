@@ -6,3 +6,6 @@ streamlit
 python-dotenv
 sentence-transformers
 ollama
+google-cloud-storage
+google-cloud-firestore
+google-auth
