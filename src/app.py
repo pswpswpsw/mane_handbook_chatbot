@@ -5,6 +5,16 @@ import os
 __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
+# DEBUG: Print environment info
+try:
+    import langchain
+    import langchain.chains
+    print(f"LangChain version: {langchain.__version__}")
+    print(f"Available chains: {dir(langchain.chains)}")
+except Exception as e:
+    print(f"Debug Error: {e}")
+
 from chatbot import Chatbot
 
 # --- Page Configuration ---
