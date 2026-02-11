@@ -3,8 +3,9 @@ from dotenv import load_dotenv
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
-from langchain.chains import RetrievalQA
+from langchain_core.prompts import ChatPromptTemplate
+from langchain.chains.retrieval import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
 
 # Load environment variables
 load_dotenv()
@@ -22,10 +23,11 @@ class Chatbot:
         self.chain = self._setup_chain()
 
     def _setup_chain(self):
-        """Configures and returns the RetrievalQA chain."""
+        """Configures and returns the retrieval chain."""
         # 1. Load the local vector database
         embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
         vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
+        retriever = vectorstore.as_retriever()
 
         # 2. Set up the LLM through OpenRouter
         if not OPENROUTER_API_KEY:
@@ -44,58 +46,28 @@ class Chatbot:
 
         # 3. Create a prompt template
         # This is the most important part. It instructs the LLM to answer *only* based on the context.
-        template = """
-        You are a factual, helpful assistant for the RPI MANE department, focused on answering questions about the graduate program. Follow these strict instructions:
-        
-1. Question Classification
-If the question is about the graduate program:
-
-Use only the provided graduate student handbook as your source.
-
-If the answer is found in the handbook: respond with a clear, concise answer based strictly on that content.
-
-If the answer is not in the handbook: reply with:
-
-"I'm sorry, I cannot find the answer to that in the graduate student handbook."
-You may then optionally add a general response based on verified, factual knowledge about the RPI MANE department — but do not speculate or assume.
-
-If the question is not about the graduate program:
-
-You may still respond based on known, factual information about the RPI MANE department.
-
-Clearly state:
-
-"This information is not from the graduate student handbook."
-
-2. Style & Integrity
-Be concise and answer the question directly.
-
-Do not fabricate or infer information. If a fact is not supported by the handbook or verifiable knowledge, say so.
-
-Always prioritize factual accuracy over completeness or helpfulness.
-
-
-
-        CONTEXT:
-        {context}
-
-        QUESTION:
-        {question}
-
-        ANSWER:
-        """
-        prompt = PromptTemplate(template=template, input_variables=["context", "question"])
-
-        # 4. Create the RetrievalQA chain
-        # This chain ties together the retriever (vector database) and the LLM.
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
-            retriever=vectorstore.as_retriever(),
-            chain_type_kwargs={"prompt": prompt},
-            return_source_documents=True
+        system_prompt = (
+            "You are a factual, helpful assistant for the RPI MANE department, focused on answering questions about the graduate program.\n"
+            "By strict instructions, you must answer based ONLY on the provided context below.\n"
+            "If the answer is not in the context, say 'I'm sorry, I cannot find the answer to that in the graduate student handbook.'\n"
+            "Do not fabricate or infer information.\n"
+            "\n"
+            "Context:\n"
+            "{context}"
         )
-        return qa_chain
+
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system_prompt),
+                ("human", "{input}"),
+            ]
+        )
+
+        # 4. Create the chain
+        question_answer_chain = create_stuff_documents_chain(llm, prompt)
+        rag_chain = create_retrieval_chain(retriever, question_answer_chain)
+        
+        return rag_chain
 
     def get_response(self, query):
         """
@@ -106,8 +78,8 @@ Always prioritize factual accuracy over completeness or helpfulness.
             return "Chatbot is not initialized.", []
         
         try:
-            response = self.chain.invoke({"query": query})
-            return response.get("result"), response.get("source_documents", [])
+            response = self.chain.invoke({"input": query})
+            return response.get("answer"), response.get("context", [])
         except Exception as e:
             return f"An error occurred: {e}", []
 
