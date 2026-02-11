@@ -41,7 +41,7 @@ with st.sidebar:
     st.info(
         "This chatbot helps you find answers to questions about the "
         "MANE Graduate Student Handbook.\n\n"
-        "It uses a local AI model (via Ollama) and a vector database "
+        "It uses OpenRouter (cloud AI) and a vector database "
         "to ensure answers come directly from the handbook content."
     )
     st.header("How to Use")

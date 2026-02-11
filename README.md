@@ -1,25 +1,25 @@
-# MANE Graduate Handbook Chatbot (Local + Google Cloud Integration)
+# MANE Graduate Handbook Chatbot (OpenRouter + Google Cloud Integration)
 
 This project is a Retrieval-Augmented Generation (RAG) based chatbot designed to answer questions about the RPI MANE Graduate Student Handbook.
 
-This version uses Ollama for local AI processing and can optionally integrate with Google Cloud services for enhanced functionality.
+This version uses OpenRouter for AI processing (free tier models available) and can optionally integrate with Google Cloud services for enhanced functionality.
 
 ## Features
 
-- **Local AI Processing**: Uses Ollama to run open-source LLMs locally
+- **Cloud AI Processing**: Uses OpenRouter to access free tier LLMs (no local installation required)
 - **Vector Database**: ChromaDB for efficient document retrieval
 - **Google Cloud Integration** (Optional):
   - Google Cloud Storage for document storage
   - Google Cloud Firestore for chat history persistence
   - Google Cloud Run for deployment
-- **Privacy-First**: Your data stays local by default
+- **Privacy-First**: Your data stays local by default (embeddings are generated locally)
 
 ## How it Works
 
-1.  **Ollama Setup**: This project uses [Ollama](https://ollama.com/) to run a powerful open-source Large Language Model (like Llama 3) locally.
+1.  **OpenRouter Setup**: This project uses [OpenRouter](https://openrouter.ai/) to access free tier LLMs (like Llama 3.3 8B) via API. No local installation required.
 2.  **Ingestion**: The `ingest.py` script reads the handbook PDF, splits it into chunks, and uses a local sentence-transformer model to generate embeddings. These are stored in a local ChromaDB vector database.
 3.  **Chat Interface**: The `app.py` script runs a Streamlit web application. When a user asks a question, the app searches the local vector database for relevant text chunks.
-4.  **Answering**: The user's question and the retrieved text are sent to the local LLM running via Ollama. The model is instructed to answer the question based *only* on the provided information from the handbook.
+4.  **Answering**: The user's question and the retrieved text are sent to the LLM via OpenRouter API. The model is instructed to answer the question based *only* on the provided information from the handbook.
 5.  **Cloud Integration** (Optional): Chat history can be stored in Firestore, and documents can be stored in Cloud Storage.
 
 ## Project Structure
@@ -38,34 +38,43 @@ mane_handbook_chatbot/
 ├── Dockerfile              # For Google Cloud Run deployment
 ├── deploy_to_cloud_run.sh  # Deployment script
 ├── env.example             # Example environment variables file
-├── requirements.txt        # Python dependencies
+├── pyproject.toml          # Python dependencies (uv managed)
 └── README.md               # This file
 ```
 
 ## Local Setup
 
-**Step 1: Install and Set Up Ollama**
+**Note**: This project uses [uv](https://github.com/astral-sh/uv) for fast Python dependency management and virtual environments. uv is significantly faster than pip and handles virtual environments automatically.
 
-This is a one-time setup.
+**Step 1: Get OpenRouter API Key**
 
-1.  Go to [https://ollama.com/](https://ollama.com/) and download the application for your operating system (Windows, macOS, or Linux).
-2.  Install Ollama.
-3.  Once installed, open your terminal or command prompt and pull a model. We recommend Llama 3, which is powerful and efficient.
-    ```bash
-    ollama pull llama3
-    ```
-    This will download the model to your machine. You can verify it's running by typing `ollama list`.
+1.  Go to [https://openrouter.ai/](https://openrouter.ai/) and create an account.
+2.  Navigate to your account settings and generate an API key.
+3.  The free tier includes access to models like `meta-llama/llama-3.3-8b-instruct:free`.
 
 **Step 2: Set Up the Python Project**
 
-1.  **Install Python Dependencies**:
+1.  **Install uv** (if not already installed):
     ```bash
-    pip install -r requirements.txt
+    # On macOS/Linux:
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    # Or using pip:
+    pip install uv
     ```
 
-2.  **Set up Environment Variables**:
+2.  **Install Python Dependencies with uv**:
+    ```bash
+    uv sync
+    ```
+    This will create a virtual environment and install all dependencies from `pyproject.toml`.
+
+3.  **Set up Environment Variables**:
     -   Copy `env.example` to `.env`.
-    -   The file specifies which Ollama model to use. The default is `llama3`, which you just downloaded.
+    -   Edit `.env` and add your OpenRouter API key:
+        ```env
+        OPENROUTER_API_KEY=your-api-key-here
+        ```
+    -   You can optionally change the model (default is `meta-llama/llama-3.3-8b-instruct:free`).
 
 3.  **Add the Handbook**:
     -   Place the MANE Graduate Student Handbook PDF inside the `data` folder.
@@ -73,12 +82,12 @@ This is a one-time setup.
 
 4.  **Create the Knowledge Base**:
     ```bash
-    python src/ingest.py
+    uv run python src/ingest.py
     ```
 
 5.  **Run the Chatbot Application**:
     ```bash
-    streamlit run src/app.py
+    uv run streamlit run src/app.py
     ```
 
 ## Google Cloud Integration
@@ -148,7 +157,9 @@ This is a one-time setup.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `OLLAMA_MODEL` | Ollama model to use | `llama3-chatqa` |
+| `OPENROUTER_API_KEY` | OpenRouter API key (required) | - |
+| `OPENROUTER_MODEL` | OpenRouter model to use | `meta-llama/llama-3.3-8b-instruct:free` |
+| `OPENROUTER_BASE_URL` | OpenRouter API base URL | `https://openrouter.ai/api/v1` |
 | `EMBEDDING_MODEL` | Embedding model for vector search | `all-MiniLM-L6-v2` |
 | `USE_CLOUD_SERVICES` | Enable Google Cloud integration | `false` |
 | `USE_CLOUD_STORAGE` | Use Cloud Storage for documents | `false` |
@@ -159,8 +170,8 @@ This is a one-time setup.
 ## Troubleshooting
 
 ### Local Issues
-- **Ollama not found**: Make sure Ollama is installed and running
-- **Model not found**: Run `ollama pull llama3` to download the model
+- **OpenRouter API key missing**: Make sure to set `OPENROUTER_API_KEY` in your `.env` file
+- **Model not available**: Check OpenRouter for model availability; some free models may have rate limits
 - **ChromaDB not found**: Run `python src/ingest.py` to create the vector database
 
 ### Cloud Issues

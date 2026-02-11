@@ -16,7 +16,7 @@ st.set_page_config(
 )
 
 st.title("MANE Graduate Handbook Chatbot 🤖")
-st.caption("Powered by Ollama with Google Cloud integration")
+st.caption("Powered by OpenRouter with Google Cloud integration")
 
 # --- Configuration ---
 USE_CLOUD_SERVICES = os.getenv("USE_CLOUD_SERVICES", "false").lower() == "true"
@@ -71,7 +71,7 @@ with st.sidebar:
     st.info(
         "This chatbot helps you find answers to questions about the "
         "MANE Graduate Student Handbook.\n\n"
-        "It uses a local AI model (via Ollama) and a vector database "
+        "It uses OpenRouter (cloud AI) and a vector database "
         "to ensure answers come directly from the handbook content."
     )
     

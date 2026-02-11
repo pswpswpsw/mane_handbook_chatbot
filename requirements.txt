@@ -2,11 +2,11 @@ langchain
 langchain-community
 langchain-text-splitters
 langchain-core
+langchain-openai
 chromadb
 streamlit
 python-dotenv
 sentence-transformers
-ollama
 google-cloud-storage
 google-cloud-firestore
 google-auth

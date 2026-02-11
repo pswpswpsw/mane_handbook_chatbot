@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.llms import Ollama
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 
@@ -12,7 +12,9 @@ load_dotenv()
 # --- Configuration ---
 DB_PATH = "chroma_db"
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL",'all-MiniLM-L6-v2')
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL",'llama3-chatqa')
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.3-8b-instruct:free")
+OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 
 class Chatbot:
     def __init__(self):
@@ -25,8 +27,20 @@ class Chatbot:
         embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
         vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
 
-        # 2. Set up the local LLM through Ollama
-        llm = Ollama(model=OLLAMA_MODEL)
+        # 2. Set up the LLM through OpenRouter
+        if not OPENROUTER_API_KEY:
+            raise ValueError(
+                "OPENROUTER_API_KEY is not set. Please set it in your .env file. "
+                "Get your API key from https://openrouter.ai/"
+            )
+        
+        llm = ChatOpenAI(
+            model=OPENROUTER_MODEL,
+            openai_api_key=OPENROUTER_API_KEY,
+            openai_api_base=OPENROUTER_BASE_URL,
+            temperature=0.3,
+            max_tokens=1024
+        )
 
         # 3. Create a prompt template
         # This is the most important part. It instructs the LLM to answer *only* based on the context.
