@@ -1,6 +1,7 @@
 langchain
 langchain-community
 langchain-text-splitters
+langchain-core
 chromadb
 streamlit
 python-dotenv
@@ -9,3 +10,4 @@ ollama
 google-cloud-storage
 google-cloud-firestore
 google-auth
+pysqlite3-binary

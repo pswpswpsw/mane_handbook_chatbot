@@ -1,5 +1,10 @@
 import streamlit as st
 import os
+
+# Fix for ChromaDB on Streamlit Cloud (requires pysqlite3-binary)
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 from chatbot import Chatbot
 
 # --- Page Configuration ---
